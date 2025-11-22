@@ -4,20 +4,19 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileShader, compileProgram
 from typing import Optional, List, Any
 import numpy as np
-import random
 
 
 class Window:
-    def __init__(self) -> None:
+    def __init__(self, width=800, height=600) -> None:
         # window
         self.window = None
-        self.WIDTH = 800
-        self.HEIGHT = 600
+        self.WIDTH = width
+        self.HEIGHT = height
         self.shader_program = None
         
         self.delta_time = 0.0
         
-        # move
+        # movement
         self.cam_speed, self.cam_yaw_speed = 10., 30.
         self.cam_pos = np.array([0., 0., 2.])
         
@@ -48,11 +47,18 @@ class Window:
         self.cam_pitch += yoffset
     
     def keyCallback(self, window, key, scancode, action, mods):
+        '''
+        Desenvolver os inputs referentes ao teclado aqui
+        '''
         pass
     
     # --------------------------------------------
     
     def openGLInit(self, name="Casa 3D"):
+        '''
+        Initialize GLFW and create a window
+        Here you will find the window creation and context initialization
+        '''
         glfw.init()
         
         self.window = glfw.create_window(self.WIDTH, self.HEIGHT, name, None, None)
@@ -68,7 +74,10 @@ class Window:
         glfw.set_key_callback(self.window, self.keyCallback)
 
     def shaderInit(self):
-        
+        '''
+        Initialize shaders
+        Here you will find the vertex and fragment shaders code and their compilation
+        '''
         vertex_shader = """
             #version 400
             layout(location = 0) in vec3 vertex_posicao;        
@@ -109,7 +118,9 @@ class Window:
         glDeleteShader(fs)
     
     def visualizationMatrixEsp(self):
-        # matriz de projeção
+        '''
+        Define the view matrix (camera)
+        '''
         front = np.array([
             np.cos(np.radians(self.cam_yaw)) * np.cos(np.radians(self.cam_pitch)),
             np.sin(np.radians(self.cam_pitch)),
@@ -138,6 +149,9 @@ class Window:
         glUniformMatrix4fv(transformLoc, 1, GL_TRUE, view)
     
     def projectionMatrixEsp(self):
+        '''
+        Define the projection matrix (perspective)
+        '''
         znear = 0.1 #recorte z-near
         zfar = 100.0 #recorte z-far
         fov = np.radians(67.0) #campo de visão
@@ -162,6 +176,10 @@ class Window:
         self.projectionMatrixEsp()
     
     def keyboardHandle(self):
+        '''
+        Responsible for handling keyboard inputs for camera movement
+        Maybe this can be moved to the keyCallback method
+        '''
         speed = self.cam_speed * self.delta_time
         
         foward = np.array([
@@ -190,6 +208,9 @@ class Window:
             glfw.set_window_should_close(self.window, True)
     
     def renderInit(self, objects: Optional[List[Any]] = None):
+        '''
+        Render initialization and main loop
+        '''
         before_time = glfw.get_time()
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)

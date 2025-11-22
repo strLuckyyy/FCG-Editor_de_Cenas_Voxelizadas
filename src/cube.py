@@ -26,7 +26,7 @@ class Cube(Object):
     
     @override
     def draw(self):
-        self.cube_vao = self.cubeInit(size=[1.,1.,1.])
+        self.cube_vao = self.cubeInit(size=[1.,1.,1.]) # initialize cube geometry
 
         for x in range(self.size):
             for y in range(self.size):
