@@ -63,7 +63,7 @@ class Window:
             # --- DELEÇÃO ---
             elif key == glfw.KEY_DELETE or key == glfw.KEY_BACKSPACE:
                 print("Deletando Voxel...")
-                if hasattr(self, 'target_cube'):
+                if hasattr(self, 'target_cube'):  # se o atributo existe em cube.py
                     self.target_cube.remove_voxel()
     
     # --------------------------------------------
