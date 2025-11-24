@@ -51,10 +51,13 @@ from window import Window
 
 # variables and objects
 win = Window()
-cube = Cube()
+cube = Cube(grid_size=5)
+
+# definindo o objeto cubo como alvo para acessar seus atributos na window
+win.target_cube = cube
 
 if __name__ == "__main__":
     win.openGLInit("Editor de Cenas Voxelizadas")
-    cube.draw()
+    cube.draw() #inicializa a geometria
     win.shaderInit()
     win.renderInit([cube])

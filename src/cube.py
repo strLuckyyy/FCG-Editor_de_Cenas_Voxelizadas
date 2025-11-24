@@ -16,14 +16,42 @@ class Voxel:
 
 
 class Cube(Object):
-    def __init__(self, grid_size=3):
+    def __init__(self, grid_size=3): # tamanho padrão da grid
         super().__init__()
         self.cube_vao = None
         
         self.size = grid_size # handle of the grid size
         self.grid = np.empty((self.size,self.size,self.size), dtype=object) # grid to hold the voxels
         self.selection_x, self.selection_y, self.selection_z = 0,0,self.size-1 # current selected voxel coordinates
+        # nesse trecho fica definido o voxel selecionado no início do programa 
     
+
+    def get_selected_voxel(self):
+        """Retorna o objeto Voxel que está atualmente selecionado"""
+        return self.grid[self.selection_x, self.selection_y, self.selection_z]
+    
+    def add_voxel(self): 
+        """Torna o voxel selecionado visível (adiciona) e define uma cor"""
+        voxel = self.get_selected_voxel()
+
+    # adiciona se ele não estiver visível
+        if not voxel.is_visible:
+            voxel.is_visible = True
+
+            # Cor aleatória para o cubo adicionado
+            r, g, b = random.random(), random.random(), random.random()
+            voxel.color = np.array([r, g, b, 1.0])
+            print(f"Voxel adicionado em {voxel.pos}")
+
+    def remove_voxel(self):
+        """Torna o voxel selecionado invisível (remove)"""
+        voxel = self.get_selected_voxel()
+
+        if voxel.is_visible:
+            voxel.is_visible = False
+            print(f"Voxel removido de {voxel.pos}")
+
+
     @override
     def draw(self):
         self.cube_vao = self.cubeInit(size=[1.,1.,1.]) # initialize cube geometry

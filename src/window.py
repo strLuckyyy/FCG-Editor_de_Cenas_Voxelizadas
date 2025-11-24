@@ -46,15 +46,29 @@ class Window:
         self.cam_yaw += xoffset
         self.cam_pitch += yoffset
     
-    def keyCallback(self, window, key, scancode, action, mods):
+    def keyCallback(self, window, key, scancode, action, mods):  
         '''
-        Desenvolver os inputs referentes ao teclado aqui
+        Inputs do teclado
         '''
-        pass
+
+        if action == glfw.PRESS: # verificando se a tecla foi pressionada
+            
+            # --- INSERÇÃO ---
+            if key == glfw.KEY_SPACE:
+                print("Inserindo Voxel...")
+                # Chamando uma função a ser criada no cubo
+                if hasattr(self, 'target_cube'):
+                    self.target_cube.add_voxel()
+
+            # --- DELEÇÃO ---
+            elif key == glfw.KEY_DELETE or key == glfw.KEY_BACKSPACE:
+                print("Deletando Voxel...")
+                if hasattr(self, 'target_cube'):
+                    self.target_cube.remove_voxel()
     
     # --------------------------------------------
     
-    def openGLInit(self, name="Casa 3D"):
+    def openGLInit(self, name="Casa 3D"): 
         '''
         Initialize GLFW and create a window
         Here you will find the window creation and context initialization
