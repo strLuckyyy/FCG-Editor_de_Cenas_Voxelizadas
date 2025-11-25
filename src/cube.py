@@ -2,7 +2,14 @@
 from dataclasses import dataclass
 from typing import override
 from object import Object
-from OpenGL.GL import *
+from OpenGL.GL import (
+    glBindVertexArray,
+    glGetUniformLocation,
+    glUniformMatrix4fv,
+    glDrawArrays,
+    GL_TRIANGLES,
+    GL_TRUE,
+)
 import numpy as np
 import random
 
