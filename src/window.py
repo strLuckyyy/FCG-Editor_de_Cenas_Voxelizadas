@@ -2,6 +2,7 @@
 import glfw
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileShader, compileProgram
+from cube import Cube
 from typing import Optional, List, Any
 import numpy as np
 
@@ -13,6 +14,8 @@ class Window:
         self.WIDTH = width
         self.HEIGHT = height
         self.shader_program = None
+        # track a target cube for insertion/removal actions (initialized to None)
+        self.target_cube: Optional[Cube] = None
         
         self.delta_time = 0.0
         
@@ -57,13 +60,13 @@ class Window:
             if key == glfw.KEY_SPACE:
                 print("Inserindo Voxel...")
                 # Chamando uma função a ser criada no cubo
-                if hasattr(self, 'target_cube'):
+                if self.target_cube is not None and hasattr(self.target_cube, 'add_voxel'):
                     self.target_cube.add_voxel()
 
             # --- DELEÇÃO ---
             elif key == glfw.KEY_DELETE or key == glfw.KEY_BACKSPACE:
                 print("Deletando Voxel...")
-                if hasattr(self, 'target_cube'):  # se o atributo existe em cube.py
+                if self.target_cube is not None and hasattr(self.target_cube, 'remove_voxel'):  # se o atributo existe em cube.py
                     self.target_cube.remove_voxel()
     
     # --------------------------------------------
