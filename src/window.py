@@ -1,7 +1,9 @@
 
 import glfw
+
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileShader, compileProgram
+
 from cube import Cube
 from typing import Optional, List, Any
 import numpy as np
@@ -9,18 +11,19 @@ import numpy as np
 
 class Window:
     def __init__(self, width=800, height=600) -> None:
-        # window
+        # Window
         self.window = None
         self.WIDTH = width
         self.HEIGHT = height
         self.shader_program = None
         
-        self.target_cube: Optional[Cube] = None
-        
         self.delta_time = 0.0
         
+        # Optional atributes
+        self.target_cube: Optional[Cube] = None
+        
+        # Camera
         self.cam_front = np.array([0., 0., -1.])
-        # movement
         self.cam_speed, self.cam_yaw_speed = 10., 30.
         self.cam_pos = np.array([0., 0., 2.])
         
@@ -28,6 +31,11 @@ class Window:
         self.last_x, self.last_y = self.WIDTH / 2, self.HEIGHT / 2
         
         self.first_mouse = True
+        
+        # Crosshair
+        self.crosshair_vao = None
+        self.crosshair_shader_program = None
+        self.crosshair_vertex_count = 0
     
     # Callback -----------------------------------
     def redimensionCallback(self, window, w, h):
@@ -70,6 +78,38 @@ class Window:
                 if self.target_cube is not None and hasattr(self.target_cube, 'remove_voxel'):  # se o atributo existe em cube.py
                     self.target_cube.remove_voxel()
     
+    def keyboardHandle(self):
+        '''
+        Responsible for handling keyboard inputs for camera movement
+        Maybe this can be moved to the keyCallback method
+        '''
+        speed = self.cam_speed * self.delta_time
+        
+        foward = np.array([
+            np.cos(np.radians(self.cam_yaw)) * np.cos(np.radians(self.cam_pitch)),
+            np.sin(np.radians(self.cam_pitch)),
+            np.sin(np.radians(self.cam_yaw)) * np.cos(np.radians(self.cam_pitch))
+        ])
+        foward /= np.linalg.norm(foward)
+        
+        right = np.cross(foward, np.array([0.0, 1.0, 0.0]))
+        right /= np.linalg.norm(right)
+        
+        # W/S
+        if glfw.get_key(self.window, glfw.KEY_W) == glfw.PRESS:
+            self.cam_pos += foward * speed
+        if glfw.get_key(self.window, glfw.KEY_S) == glfw.PRESS:
+            self.cam_pos -= foward * speed
+            
+        # A/D
+        if glfw.get_key(self.window, glfw.KEY_A) == glfw.PRESS:
+            self.cam_pos -= right * speed
+        if glfw.get_key(self.window, glfw.KEY_D) == glfw.PRESS:
+            self.cam_pos += right * speed
+            
+        if glfw.get_key(self.window, glfw.KEY_ESCAPE) == glfw.PRESS:
+            glfw.set_window_should_close(self.window, True)
+    
     # --------------------------------------------
     
     def openGLInit(self, name="Casa 3D"): 
@@ -90,6 +130,8 @@ class Window:
         glfw.set_input_mode(self.window, glfw.CURSOR, glfw.CURSOR_DISABLED)
         glfw.set_cursor_pos_callback(self.window, self.mouseCallback)
         glfw.set_key_callback(self.window, self.keyCallback)
+        
+        self.crosshairInit()
 
     def shaderInit(self):
         '''
@@ -134,6 +176,8 @@ class Window:
         
         glDeleteShader(vs)
         glDeleteShader(fs)
+        
+        self.crosshairShaderInit()
     
     def visualizationMatrixEsp(self):
         '''
@@ -199,37 +243,105 @@ class Window:
         self.visualizationMatrixEsp()
         self.projectionMatrixEsp()
     
-    def keyboardHandle(self):
+    # Crosshair  -----------------------------------
+    def crosshairInit(self):
         '''
-        Responsible for handling keyboard inputs for camera movement
-        Maybe this can be moved to the keyCallback method
+        Initialize the geometry for a crosshair in NDC space.
+        Returns the VAO ID.
         '''
-        speed = self.cam_speed * self.delta_time
+        size = 0.02 # Tamanho da linha em NDC
+        thickness = 0.005 # Meia espessura (largura da linha)
         
-        foward = np.array([
-            np.cos(np.radians(self.cam_yaw)) * np.cos(np.radians(self.cam_pitch)),
-            np.sin(np.radians(self.cam_pitch)),
-            np.sin(np.radians(self.cam_yaw)) * np.cos(np.radians(self.cam_pitch))
-        ])
-        foward /= np.linalg.norm(foward)
-        
-        right = np.cross(foward, np.array([0.0, 1.0, 0.0]))
-        right /= np.linalg.norm(right)
-        
-        # W/S
-        if glfw.get_key(self.window, glfw.KEY_W) == glfw.PRESS:
-            self.cam_pos += foward * speed
-        if glfw.get_key(self.window, glfw.KEY_S) == glfw.PRESS:
-            self.cam_pos -= foward * speed
+        vertices = np.array([
+            # Linha Horizontal (um retângulo)
+            -size, -thickness, 0.0,
+             size, -thickness, 0.0,
+             size,  thickness, 0.0,
             
-        # A/D
-        if glfw.get_key(self.window, glfw.KEY_A) == glfw.PRESS:
-            self.cam_pos -= right * speed
-        if glfw.get_key(self.window, glfw.KEY_D) == glfw.PRESS:
-            self.cam_pos += right * speed
+            -size, -thickness, 0.0,
+            -size,  thickness, 0.0,
+             size,  thickness, 0.0,
+             
+            # Linha Vertical (um retângulo)
+            -thickness, -size, 0.0,
+             thickness, -size, 0.0,
+             thickness,  size, 0.0,
             
-        if glfw.get_key(self.window, glfw.KEY_ESCAPE) == glfw.PRESS:
-            glfw.set_window_should_close(self.window, True)
+            -thickness, -size, 0.0,
+            -thickness,  size, 0.0,
+             thickness,  size, 0.0
+        ], dtype=np.float32)
+        
+        # Cria e configura o VAO/VBO
+        vao = glGenVertexArrays(1)
+        glBindVertexArray(vao)
+
+        vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, vbo)
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+        
+        # O layout location 0 é o mesmo usado pelos cubos
+        glEnableVertexAttribArray(0)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, None)
+        
+        glBindVertexArray(0)
+        
+        self.crosshair_vao = vao
+        self.crosshair_vertex_count = len(vertices) // 3 # 12 vértices
+        
+        return vao
+
+    def crosshairShaderInit(self):
+        '''
+        Initialize a simple shader program for the crosshair (no transformations, solid color).
+        '''
+        vertex_shader = """
+            #version 400
+            layout(location = 0) in vec3 vertex_posicao;
+            void main () {
+                // A posição já está em NDC (Normalized Device Coordinates),
+                // então passamos diretamente para gl_Position.
+                gl_Position = vec4(vertex_posicao, 1.0);
+            }
+        """
+        
+        fragment_shader = """
+            #version 400
+            out vec4 frag_colour;
+            uniform vec4 crosshairColor;
+            void main () {
+                frag_colour = crosshairColor;
+            }
+        """
+        
+        vs = compileShader(vertex_shader, GL_VERTEX_SHADER)
+        fs = compileShader(fragment_shader, GL_FRAGMENT_SHADER)
+            
+        self.crosshair_shader_program = compileProgram(vs, fs)
+        
+        # Verifica erros e deleta shaders (mesma lógica de shaderInit)
+        glDeleteShader(vs)
+        glDeleteShader(fs)
+        
+        return self.crosshair_shader_program
+
+    def drawCrosshair(self):
+        '''
+        Draw the crosshair in the center of the screen.
+        '''
+        glUseProgram(self.crosshair_shader_program)
+        
+        # Define a cor da mira (exemplo: vermelho)
+        color = np.array([1.0, 0.0, 0.0, 1.0], dtype=np.float32)
+        colorLoc = glGetUniformLocation(self.crosshair_shader_program, "crosshairColor")
+        glUniform4fv(colorLoc, 1, color)
+        
+        # Desenha
+        glBindVertexArray(self.crosshair_vao)
+        glDrawArrays(GL_TRIANGLES, 0, self.crosshair_vertex_count)
+        glBindVertexArray(0)
+    
+    # --------------------------------------------
     
     def renderInit(self, objects: Optional[List[Any]] = None):
         '''
@@ -264,6 +376,8 @@ class Window:
             if objects is not None:
                 for obj in objects:
                     self.shader_program = obj.render(self.shader_program)
+            
+            self.drawCrosshair()
             
             glfw.swap_buffers(self.window)
             glfw.poll_events()
