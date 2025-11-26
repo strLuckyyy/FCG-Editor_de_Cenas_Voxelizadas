@@ -7,8 +7,13 @@ from OpenGL.GL import (
     glGetUniformLocation,
     glUniformMatrix4fv,
     glDrawArrays,
+    glPolygonMode,
+    glLineWidth,
     GL_TRIANGLES,
     GL_TRUE,
+    GL_FRONT_AND_BACK,
+    GL_LINE,
+    GL_FILL,
 )
 import numpy as np
 import random
@@ -57,7 +62,7 @@ class Cube(Object):
             voxel.is_visible = False
             print(f"Voxel removido de {voxel.pos}")
 
-    def raycast_selection(self, cam_pos, cam_front, max_distance=20.0): # FIXME: May can ignore voxels that are not visible; or just do a wireframe to inforem the user where are the voxels
+    def raycast_selection(self, cam_pos, cam_front, max_distance=20.0):
         """
         Faz ray casting a partir da câmera e retorna o voxel mais próximo intersectado
         Atualiza self.selection_x, y, z
@@ -155,34 +160,45 @@ class Cube(Object):
         for x in range(self.size):
             for y in range(self.size):
                 for z in range(self.size):
-                    #pega se o voxel ta visível ou não
-                    visible = self.grid[x, y, z].is_visible
-                    
+                    voxel = self.grid[x, y, z]
+                    visible = voxel.is_visible
+
                     if visible:
-                        #pega a posição do voxel
-                        Tx = self.grid[x, y, z].pos[0]
-                        Ty = self.grid[x, y, z].pos[1]
-                        Tz = self.grid[x, y, z].pos[2]
-                        
-                        #pega o fator de escala do voxel
-                        S = self.grid[x, y, z].scale
-                        
-                        #pega a cor do voxel
-                        r = self.grid[x, y, z].color[0]
-                        g = self.grid[x, y, z].color[1]
-                        b = self.grid[x, y, z].color[2]
-                        a = self.grid[x, y, z].color[3]
-                        
-                        #se estiver selecionado, deixa a cor + forte
-                        if self.grid[x, y, z].is_selected:
-                            r+=0.5
-                            g+=0.5
-                            b+=0.5
-                            
+                        # --- desenha normalmente ---
+                        Tx, Ty, Tz = voxel.pos
+                        S = voxel.scale
+
+                        r, g, b, a = voxel.color
+
+                        if voxel.is_selected:
+                            r = min(r + 0.5, 1.0)
+                            g = min(g + 0.5, 1.0)
+                            b = min(b + 0.5, 1.0)
+
                         self.defineColor(shader_program, r, g, b, a)
                         transform = self.transformation(Tx, Ty, Tz, Sx=S, Sy=S, Sz=S)
                         transform_loc = glGetUniformLocation(shader_program, "transform")
                         glUniformMatrix4fv(transform_loc, 1, GL_TRUE, transform)
+
                         glDrawArrays(GL_TRIANGLES, 0, cube_count)
+
+                    else:
+                        # --- DESENHAR WIREFRAME SE ESTIVER SELECIONADO ---
+                        if voxel.is_selected:
+                            Tx, Ty, Tz = voxel.pos
+                            S = voxel.scale
+
+                            # cor branca do wireframe
+                            self.defineColor(shader_program, 1.0, 1.0, 1.0, 1.0)
+
+                            transform = self.transformation(Tx, Ty, Tz, Sx=S, Sy=S, Sz=S)
+                            transform_loc = glGetUniformLocation(shader_program, "transform")
+                            glUniformMatrix4fv(transform_loc, 1, GL_TRUE, transform)
+
+                            # desenhar como wireframe
+                            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+                            glLineWidth(2.5)
+                            glDrawArrays(GL_TRIANGLES, 0, cube_count)
+                            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
         
         return shader_program
