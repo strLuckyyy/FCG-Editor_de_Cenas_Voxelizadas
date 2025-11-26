@@ -31,7 +31,6 @@ class Cube(Object):
         self.grid = np.empty((self.size,self.size,self.size), dtype=object) # grid to hold the voxels
         self.selection_x, self.selection_y, self.selection_z = 0,0,self.size-1 # current selected voxel coordinates
         # nesse trecho fica definido o voxel selecionado no início do programa 
-    
 
     def get_selected_voxel(self):
         """Retorna o objeto Voxel que está atualmente selecionado"""
@@ -58,6 +57,67 @@ class Cube(Object):
             voxel.is_visible = False
             print(f"Voxel removido de {voxel.pos}")
 
+    def raycast_selection(self, cam_pos, cam_front, max_distance=20.0):
+        """
+        Faz ray casting a partir da câmera e retorna o voxel mais próximo intersectado
+        Atualiza self.selection_x, y, z
+        """
+        best_t = float('inf')
+        best_voxel = None
+
+        # Direção normalizada do raio (cam_front já está normalizado no seu código)
+        direction = cam_front / np.linalg.norm(cam_front)
+
+        for x in range(self.size):
+            for y in range(self.size):
+                for z in range(self.size):
+                    voxel: Voxel = self.grid[x, y, z]
+                    '''if not voxel.is_visible and not hasattr(voxel, 'is_visible'):
+                        continue  # pula se ainda não foi criado'''
+
+                    # Centro do voxel no mundo (considerando escala 0.75 e offset)
+                    center = np.array([x, y, z], dtype=float)
+                    half_size = voxel.scale / 2.0  # 0.375
+
+                    # AABB (Axis-Aligned Bounding Box) do voxel
+                    min_bound = center - half_size
+                    max_bound = center + half_size
+
+                    # Ray-AABB intersection (slab method)
+                    tmin = 0.0
+                    tmax = max_distance
+
+                    for i in range(3):
+                        if abs(direction[i]) < 1e-6:
+                            # Raio paralelo ao eixo
+                            if cam_pos[i] < min_bound[i] or cam_pos[i] > max_bound[i]:
+                                tmin = float('inf')
+                                break
+                        else:
+                            t1 = (min_bound[i] - cam_pos[i]) / direction[i]
+                            t2 = (max_bound[i] - cam_pos[i]) / direction[i]
+                            tmin = max(tmin, min(t1, t2))
+                            tmax = min(tmax, max(t1, t2))
+
+                    if tmin <= tmax and tmin < best_t and tmax >= 0:
+                        best_t = tmin
+                        best_voxel = (x, y, z)
+
+        if best_voxel is not None:
+            # Desmarcar o anterior
+            if hasattr(self, 'selection_x'):
+                old = self.grid[self.selection_x, self.selection_y, self.selection_z]
+                if old is not None:
+                    old.is_selected = False
+
+            # Marcar o novo
+            self.selection_x, self.selection_y, self.selection_z = best_voxel
+            voxel = self.grid[best_voxel]
+            voxel.is_selected = True
+
+            return voxel.pos  # retorna posição para debug se quiser
+
+        return None
 
     @override
     def draw(self):

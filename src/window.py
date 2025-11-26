@@ -14,11 +14,12 @@ class Window:
         self.WIDTH = width
         self.HEIGHT = height
         self.shader_program = None
-        # track a target cube for insertion/removal actions (initialized to None)
+        
         self.target_cube: Optional[Cube] = None
         
         self.delta_time = 0.0
         
+        self.cam_front = np.array([0., 0., -1.])
         # movement
         self.cam_speed, self.cam_yaw_speed = 10., 30.
         self.cam_pos = np.array([0., 0., 2.])
@@ -143,11 +144,13 @@ class Window:
             np.sin(np.radians(self.cam_pitch)),
             np.sin(np.radians(self.cam_yaw)) * np.cos(np.radians(self.cam_pitch))
         ])
-        front = front / np.linalg.norm(front)
+        front = front / np.linalg.norm(front + 1e-8)
 
         center = self.cam_pos + front
         up = np.array([0.0, 1.0, 0.0])
 
+        self.cam_front = front.copy()
+        
         f = (center - self.cam_pos)
         f = f / np.linalg.norm(f)
         s = np.cross(f, up)
@@ -164,6 +167,8 @@ class Window:
 
         transformLoc = glGetUniformLocation(self.shader_program, "view")
         glUniformMatrix4fv(transformLoc, 1, GL_TRUE, view)
+        
+        return view
     
     def projectionMatrixEsp(self):
         '''
@@ -178,7 +183,7 @@ class Window:
         b = 1/(np.tan(fov/2))
         c = (zfar + znear) / (znear - zfar)
         d = (2*znear*zfar) / (znear - zfar)
-        projecao = np.array([
+        proj = np.array([
             [a,   0.0, 0.0,  0.0],
             [0.0, b,   0.0,  0.0],
             [0.0, 0.0, c,    d],
@@ -186,7 +191,9 @@ class Window:
         ])
 
         transformLoc = glGetUniformLocation(self.shader_program, "proj")
-        glUniformMatrix4fv(transformLoc, 1, GL_TRUE, projecao)
+        glUniformMatrix4fv(transformLoc, 1, GL_TRUE, proj)
+    
+        return proj
     
     def camInit(self):
         self.visualizationMatrixEsp()
@@ -246,6 +253,13 @@ class Window:
             glUseProgram(self.shader_program)
             
             self.camInit()
+            
+            if self.target_cube is not None:
+                self.target_cube.raycast_selection(
+                    cam_pos=self.cam_pos,
+                    cam_front=self.cam_front,
+                    max_distance=50.0
+                )
             
             if objects is not None:
                 for obj in objects:
