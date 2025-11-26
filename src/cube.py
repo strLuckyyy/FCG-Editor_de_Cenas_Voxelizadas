@@ -40,7 +40,7 @@ class Cube(Object):
         """Torna o voxel selecionado visível (adiciona) e define uma cor"""
         voxel = self.get_selected_voxel()
 
-    # adiciona se ele não estiver visível
+        # adiciona se ele não estiver visível
         if not voxel.is_visible:
             voxel.is_visible = True
 
@@ -57,7 +57,7 @@ class Cube(Object):
             voxel.is_visible = False
             print(f"Voxel removido de {voxel.pos}")
 
-    def raycast_selection(self, cam_pos, cam_front, max_distance=20.0):
+    def raycast_selection(self, cam_pos, cam_front, max_distance=20.0): # FIXME: May can ignore voxels that are not visible; or just do a wireframe to inforem the user where are the voxels
         """
         Faz ray casting a partir da câmera e retorna o voxel mais próximo intersectado
         Atualiza self.selection_x, y, z
