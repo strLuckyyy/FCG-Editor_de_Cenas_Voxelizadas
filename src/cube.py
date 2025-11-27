@@ -37,6 +37,7 @@ class Cube(Object):
         self.selection_x, self.selection_y, self.selection_z = 0,0,self.size-1 # current selected voxel coordinates
         # nesse trecho fica definido o voxel selecionado no início do programa 
 
+    # ------------------- Voxel Management Methods ------------------- #
     def get_selected_voxel(self):
         """Retorna o objeto Voxel que está atualmente selecionado"""
         return self.grid[self.selection_x, self.selection_y, self.selection_z]
@@ -61,6 +62,34 @@ class Cube(Object):
         if voxel.is_visible:
             voxel.is_visible = False
             print(f"Voxel removido de {voxel.pos}")
+
+    def paint_selected_voxel(self, r, g, b):
+        """
+        Altera a cor do voxel atualmente selecionado para a cor especificada.
+        """
+        # Verifica se as coordenadas de seleção são válidas na grid
+        if (0 <= self.selection_x < self.size and 
+            0 <= self.selection_y < self.size and 
+            0 <= self.selection_z < self.size):
+            
+            voxel = self.grid[self.selection_x, self.selection_y, self.selection_z]
+            
+            # Só pinta se o voxel existir e estiver visível
+            if voxel and voxel.is_visible:
+                voxel.color = np.array([r, g, b, 1.0])
+                print(f"Voxel em {voxel.pos} pintado!")
+
+    def clear_scene(self):
+        """
+        Torna todos os voxels atuais invisíveis.
+        Usado automaticamente antes de carregar um arquivo novo.
+        """
+        for x in range(self.size):
+            for y in range(self.size):
+                for z in range(self.size):
+                    # Se existe um voxel nessa posição, desliga a visibilidade dele
+                    if self.grid[x, y, z]: 
+                        self.grid[x, y, z].is_visible = False    
 
     def raycast_selection(self, cam_pos, cam_front, max_distance=20.0):
         """
@@ -136,7 +165,7 @@ class Cube(Object):
                     g = random.random()
                     b = random.random()
                     #a = random.random()
-                    a = 0.8
+                    a = 1.
                     color = np.array([r,g,b,a])
                     
                     # define if voxel is visible or not

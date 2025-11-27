@@ -5,6 +5,7 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileShader, compileProgram
 
 from cube import Cube
+from scene_manager import SceneManager
 from typing import Optional, List, Any
 import numpy as np
 
@@ -19,8 +20,9 @@ class Window:
         
         self.delta_time = 0.0
         
-        # Optional atributes
+        # Objects
         self.target_cube: Optional[Cube] = None
+        self.scene_manager = SceneManager()
         
         # Camera
         self.cam_front = np.array([0., 0., -1.])
@@ -58,13 +60,30 @@ class Window:
         self.cam_yaw += xoffset
         self.cam_pitch += yoffset
     
+    def mouseButtonCallback(self, window, button, action, mods):
+        '''
+        Inputs dos Botões do Mouse
+        '''
+        if action == glfw.PRESS:
+            
+            # Botão Esquerdo = Adicionar (Inserir)
+            if button == glfw.MOUSE_BUTTON_LEFT:
+                print("Clique Esquerdo: Inserindo...")
+                if self.target_cube and hasattr(self.target_cube, 'add_voxel'):
+                    self.target_cube.add_voxel()
+            
+            # Botão Direito = Remover (Deletar)
+            elif button == glfw.MOUSE_BUTTON_RIGHT:
+                print("Clique Direito: Deletando...")
+                if self.target_cube and hasattr(self.target_cube, 'remove_voxel'):
+                    self.target_cube.remove_voxel()
+    
     def keyCallback(self, window, key, scancode, action, mods):  
         '''
         Inputs do teclado
         '''
 
         if action == glfw.PRESS: # verificando se a tecla foi pressionada
-            
             # --- INSERÇÃO ---
             if key == glfw.KEY_SPACE:
                 print("Inserindo Voxel...")
@@ -77,8 +96,40 @@ class Window:
                 print("Deletando Voxel...")
                 if self.target_cube is not None and hasattr(self.target_cube, 'remove_voxel'):  # se o atributo existe em cube.py
                     self.target_cube.remove_voxel()
+
+            
+            # --- PINTURA (Teclas 1-5) ---
+            elif key == glfw.KEY_1: # Vermelho
+                if self.target_cube: self.target_cube.paint_selected_voxel(1.0, 0.0, 0.0)
+
+            elif key == glfw.KEY_2: # Verde
+                if self.target_cube: self.target_cube.paint_selected_voxel(0.0, 1.0, 0.0)
+
+            elif key == glfw.KEY_3: # Azul
+                if self.target_cube: self.target_cube.paint_selected_voxel(0.0, 0.0, 1.0)
+            
+            elif key == glfw.KEY_4: # Amarelo
+                if self.target_cube: self.target_cube.paint_selected_voxel(1.0, 1.0, 0.0)
+
+            elif key == glfw.KEY_5: # Branco
+                if self.target_cube: self.target_cube.paint_selected_voxel(1.0, 1.0, 1.0)
+
+
+            # --- SALVAR (K) ---
+            elif key == glfw.KEY_K: 
+                print("Tecla K: Iniciando salvamento...")
+                if self.target_cube:
+                    # A janela manda o scene_manager ler o cubo e salvar
+                    self.scene_manager.save_scene(self.target_cube)
+
+            # --- CARREGAR (L) ---
+            elif key == glfw.KEY_L: 
+                print("Tecla L: Iniciando carregamento...")
+                if self.target_cube:
+                    # A janela manda o scene_manager limpar e preencher o cubo
+                    self.scene_manager.load_scene(self.target_cube)
     
-    def keyboardHandle(self):
+    def camMovement(self):
         '''
         Responsible for handling keyboard inputs for camera movement
         Maybe this can be moved to the keyCallback method
@@ -130,6 +181,8 @@ class Window:
         glfw.set_input_mode(self.window, glfw.CURSOR, glfw.CURSOR_DISABLED)
         glfw.set_cursor_pos_callback(self.window, self.mouseCallback)
         glfw.set_key_callback(self.window, self.keyCallback)
+
+        glfw.set_mouse_button_callback(self.window, self.mouseButtonCallback)
         
         self.crosshairInit()
 
@@ -382,7 +435,7 @@ class Window:
             glfw.swap_buffers(self.window)
             glfw.poll_events()
             
-            self.keyboardHandle()
+            self.camMovement()
             
         glfw.terminate()
 

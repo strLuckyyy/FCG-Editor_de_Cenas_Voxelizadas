@@ -175,13 +175,6 @@ class Object:
         
         self.vao = self.cubeInit(size=[1,1,1])
         
-        ### or
-        
-        self.vao = self.pyramidInit(base=1, height=1)
-        
-        ### or
-        
-        self.vao = self.customMeshInit(vertices, colors)\n
         --------------------------------
         '''
         pass
