@@ -1,31 +1,67 @@
+
+from tkinter import Tk, filedialog
+from cube import *
 import numpy as np
-from src.cube import Cube, Voxel
+import os
 
 class SceneManager:
     def __init__(self, filename="grid_salva.txt"):
         self.filename = filename
 
+    def ask_save_file(self, initial_dir="saves"):
+        root = Tk()
+        root.withdraw()
+
+        os.makedirs(initial_dir, exist_ok=True)
+
+        filepath = filedialog.asksaveasfilename(
+            initialdir=initial_dir,
+            title="Salvar cena",
+            defaultextension=".txt",
+            filetypes=[("Text Files", "*.txt")]
+        )
+
+        root.destroy()
+        return filepath
+
+    def ask_open_file(self, initial_dir="saves"):
+        root = Tk()
+        root.withdraw()
+
+        filepath = filedialog.askopenfilename(
+            initialdir=initial_dir,
+            title="Carregar cena",
+            filetypes=[("Text Files", "*.txt")]
+        )
+
+        root.destroy()
+        return filepath
+
     def save_scene(self, cube_object: Cube):
         """
         Lê a grid do cubo e salva no arquivo de texto.
         """
-        print(f"Salvando cena em {self.filename}...")
+        filename = self.ask_save_file()
+
+        if not filename:
+            print("Salvamento cancelado.")
+            return
+
+        print(f"Salvando cena em {filename}...")
+        self.filename = filename
+
         try:
-            # 'w' = Write (Escrever/Sobrescrever)
-            with open(self.filename, "w") as f:
-                # Precisamos acessar os dados do cubo que foi passado como argumento
+            with open(filename, "w") as f:
                 for x in range(cube_object.size):
                     for y in range(cube_object.size):
                         for z in range(cube_object.size):
                             voxel: Voxel = cube_object.grid[x, y, z]
-                            
-                            # Só salvamos o que é visível para economizar espaço
+
                             if voxel and voxel.is_visible:
                                 r, g, b, a = voxel.color
-                                # Escrevemos uma linha no formato: X Y Z R G B
                                 f.write(f"{x} {y} {z} {r} {g} {b}\n")
+
             print("Cena salva com sucesso!")
-            
         except Exception as e:
             print(f"Erro ao salvar: {e}")
 
@@ -33,32 +69,35 @@ class SceneManager:
         """
         Lê o arquivo de texto e modifica a grid do cubo.
         """
-        print(f"Carregando cena de {self.filename}...")
+        filename = self.ask_open_file()
+
+        if not filename:
+            print("Carregamento cancelado.")
+            return
+
+        self.filename = filename
+        print(f"Carregando cena de {filename}...")
+
         try:
-            # 'r' = Read (Ler)
-            with open(self.filename, "r") as f:
-                # 1. Limpeza: Antes de carregar, apagamos o desenho atual
+            with open(filename, "r") as f:
                 cube_object.clear_scene()
-                
-                # 2. Leitura: Processamos linha por linha
                 for line in f:
-                    if not line.strip(): continue # Pula linhas vazias
-                    
-                    data = line.split() # Quebra a linha pelos espaços
-                    
-                    # Convertendo texto para números
-                    x, y, z = int(data[0]), int(data[1]), int(data[2])
-                    r, g, b = float(data[3]), float(data[4]), float(data[5])
-                    
-                    # Verificação de segurança (para não estourar a grid se o arquivo for de um tamanho diferente)
-                    if 0 <= x < cube_object.size and 0 <= y < cube_object.size and 0 <= z < cube_object.size:
+                    if not line.strip():
+                        continue
+
+                    data = line.split()
+                    x, y, z = map(int, data[:3])
+                    r, g, b = map(float, data[3:6])
+
+                    if (
+                        0 <= x < cube_object.size and
+                        0 <= y < cube_object.size and
+                        0 <= z < cube_object.size
+                    ):
                         voxel: Voxel = cube_object.grid[x, y, z]
                         voxel.is_visible = True
                         voxel.color = np.array([r, g, b, 1.0])
-                        
+
             print("Cena carregada com sucesso!")
-            
-        except FileNotFoundError:
-            print("Arquivo de salvamento não encontrado. Salve algo primeiro!")
         except Exception as e:
             print(f"Erro ao carregar: {e}")

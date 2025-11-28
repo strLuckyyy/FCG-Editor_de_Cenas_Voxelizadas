@@ -68,13 +68,11 @@ class Window:
             
             # Botão Esquerdo = Adicionar (Inserir)
             if button == glfw.MOUSE_BUTTON_LEFT:
-                print("Clique Esquerdo: Inserindo...")
                 if self.target_cube and hasattr(self.target_cube, 'add_voxel'):
                     self.target_cube.add_voxel()
             
             # Botão Direito = Remover (Deletar)
             elif button == glfw.MOUSE_BUTTON_RIGHT:
-                print("Clique Direito: Deletando...")
                 if self.target_cube and hasattr(self.target_cube, 'remove_voxel'):
                     self.target_cube.remove_voxel()
     
@@ -86,14 +84,12 @@ class Window:
         if action == glfw.PRESS: # verificando se a tecla foi pressionada
             # --- INSERÇÃO ---
             if key == glfw.KEY_SPACE:
-                print("Inserindo Voxel...")
                 # Chamando uma função a ser criada no cubo
                 if self.target_cube is not None and hasattr(self.target_cube, 'add_voxel'):
                     self.target_cube.add_voxel()
 
             # --- DELEÇÃO ---
             elif key == glfw.KEY_DELETE or key == glfw.KEY_BACKSPACE:
-                print("Deletando Voxel...")
                 if self.target_cube is not None and hasattr(self.target_cube, 'remove_voxel'):  # se o atributo existe em cube.py
                     self.target_cube.remove_voxel()
 
@@ -116,15 +112,13 @@ class Window:
 
 
             # --- SALVAR (K) ---
-            elif key == glfw.KEY_K: 
-                print("Tecla K: Iniciando salvamento...")
+            elif key == glfw.KEY_K:
                 if self.target_cube:
                     # A janela manda o scene_manager ler o cubo e salvar
                     self.scene_manager.save_scene(self.target_cube)
 
             # --- CARREGAR (L) ---
-            elif key == glfw.KEY_L: 
-                print("Tecla L: Iniciando carregamento...")
+            elif key == glfw.KEY_L:
                 if self.target_cube:
                     # A janela manda o scene_manager limpar e preencher o cubo
                     self.scene_manager.load_scene(self.target_cube)
