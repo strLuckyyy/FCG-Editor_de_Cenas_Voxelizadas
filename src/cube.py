@@ -17,6 +17,7 @@ from OpenGL.GL import (
 )
 import numpy as np
 from random import random
+from sound_manager import SoundManager
 
 @dataclass
 class Voxel:
@@ -32,11 +33,18 @@ class Cube(Object):
         super().__init__()
         self.cube_vao = None
         
+        # Sound manager for voxel actions
+        self.sound: SoundManager = SoundManager()
+        self.sound.load_sound('broke', 'broke_block.mp3')
+        self.sound.load_sound('place', 'place_block.mp3')
+
+        # Grid and Voxel Management        
         self.size = grid_size # handle of the grid size
         self.grid = np.empty((self.size,self.size,self.size), dtype=Voxel) # grid to hold the voxels
         self.grid_space = 1.
         self.selection_x, self.selection_y, self.selection_z = 0,0,self.size-1 # current selected voxel coordinates
 
+        # Grid initialization with random colors
         for x in range(self.size):
             for y in range(self.size):
                 for z in range(self.size):
@@ -65,6 +73,7 @@ class Cube(Object):
             # Cor aleatória para o cubo adicionado
             r, g, b = random(), random(), random()
             voxel.color = np.array([r, g, b, 1.0])
+            self.sound.play_sound('place', volume=0.5)
 
     def remove_voxel(self):
         """Torna o voxel selecionado invisível (remove)"""
@@ -72,6 +81,7 @@ class Cube(Object):
 
         if voxel.is_visible:
             voxel.is_visible = False
+            self.sound.play_sound('broke', volume=0.5)
 
     def paint_selected_voxel(self, r, g, b):
         """

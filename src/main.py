@@ -45,7 +45,6 @@ Apenas um integrante do grupo deve enviar o projeto contendo:
     * Nomes completos dos integrantes;
     * Instruções de uso do programa.
 '''
-import random
 from cube import Cube
 from window import Window
 
