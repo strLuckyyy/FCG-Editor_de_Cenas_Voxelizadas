@@ -32,7 +32,9 @@ class Window:
         self.cam_yaw, self.cam_pitch = -90., 0.
         self.last_x, self.last_y = self.WIDTH / 2, self.HEIGHT / 2
         
+        # Mouse
         self.first_mouse = True
+        self.scroll_value = 0.0
         
         # Crosshair
         self.crosshair_vao = None
@@ -75,6 +77,9 @@ class Window:
             elif button == glfw.MOUSE_BUTTON_RIGHT:
                 if self.target_cube and hasattr(self.target_cube, 'remove_voxel'):
                     self.target_cube.remove_voxel()
+        
+    def scrollCallback(self, window, xoffset, yoffset):
+        self.scroll_value += yoffset
     
     def keyCallback(self, window, key, scancode, action, mods):  
         '''
@@ -157,6 +162,7 @@ class Window:
     
     # --------------------------------------------
     
+    # OpenGL Initialization Methods -----------------------------
     def openGLInit(self, name="Casa 3D"): 
         '''
         Initialize GLFW and create a window
@@ -177,6 +183,7 @@ class Window:
         glfw.set_key_callback(self.window, self.keyCallback)
 
         glfw.set_mouse_button_callback(self.window, self.mouseButtonCallback)
+        glfw.set_scroll_callback(self.window, self.scrollCallback)
         
         self.crosshairInit()
 
@@ -290,7 +297,9 @@ class Window:
         self.visualizationMatrixEsp()
         self.projectionMatrixEsp()
     
-    # Crosshair  -----------------------------------
+    # --------------------------------------------
+    
+    # Crosshair Methods -----------------------------
     def crosshairInit(self):
         '''
         Initialize the geometry for a crosshair in NDC space.
@@ -335,9 +344,8 @@ class Window:
         
         self.crosshair_vao = vao
         self.crosshair_vertex_count = len(vertices) // 3 # 12 vértices
-        
         return vao
-
+     
     def crosshairShaderInit(self):
         '''
         Initialize a simple shader program for the crosshair (no transformations, solid color).
@@ -412,6 +420,11 @@ class Window:
             glUseProgram(self.shader_program)
             
             self.camInit()
+            
+            if self.scroll_value != 0.0:
+                if self.target_cube is not None:
+                    self.target_cube.updateGridSpace(self.scroll_value)
+                self.scroll_value = 0.0
             
             if self.target_cube is not None:
                 self.target_cube.raycast_selection(

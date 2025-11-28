@@ -16,7 +16,7 @@ from OpenGL.GL import (
     GL_FILL,
 )
 import numpy as np
-import random
+from random import random
 
 @dataclass
 class Voxel:
@@ -33,8 +33,21 @@ class Cube(Object):
         self.cube_vao = None
         
         self.size = grid_size # handle of the grid size
-        self.grid = np.empty((self.size,self.size,self.size), dtype=object) # grid to hold the voxels
+        self.grid = np.empty((self.size,self.size,self.size), dtype=Voxel) # grid to hold the voxels
+        self.grid_space = 1.
         self.selection_x, self.selection_y, self.selection_z = 0,0,self.size-1 # current selected voxel coordinates
+
+        for x in range(self.size):
+            for y in range(self.size):
+                for z in range(self.size):
+                    r, g, b = random(), random(), random()
+                    self.grid[x, y, z] = Voxel(
+                        pos=np.array([x, y, z], dtype=float),
+                        scale=self.grid_space,
+                        color=np.array([r, g, b, 1.0]),
+                        is_visible=True
+                    )
+
 
     # ------------------- Voxel Management Methods ------------------- #
     def get_selected_voxel(self):
@@ -43,19 +56,19 @@ class Cube(Object):
     
     def add_voxel(self): 
         """Torna o voxel selecionado visível (adiciona) e define uma cor"""
-        voxel = self.get_selected_voxel()
+        voxel: Voxel = self.get_selected_voxel()
 
         # adiciona se ele não estiver visível
         if not voxel.is_visible:
             voxel.is_visible = True
 
             # Cor aleatória para o cubo adicionado
-            r, g, b = random.random(), random.random(), random.random()
+            r, g, b = random(), random(), random()
             voxel.color = np.array([r, g, b, 1.0])
 
     def remove_voxel(self):
         """Torna o voxel selecionado invisível (remove)"""
-        voxel = self.get_selected_voxel()
+        voxel: Voxel = self.get_selected_voxel()
 
         if voxel.is_visible:
             voxel.is_visible = False
@@ -69,7 +82,7 @@ class Cube(Object):
             0 <= self.selection_y < self.size and 
             0 <= self.selection_z < self.size):
             
-            voxel = self.grid[self.selection_x, self.selection_y, self.selection_z]
+            voxel: Voxel = self.grid[self.selection_x, self.selection_y, self.selection_z]
             
             # Só pinta se o voxel existir e estiver visível
             if voxel and voxel.is_visible:
@@ -149,28 +162,23 @@ class Cube(Object):
 
         return None
 
-    @override
-    def draw(self):
-        self.cube_vao = self.cubeInit(size=[1.,1.,1.]) # initialize cube geometry
-
+    def updateGridSpace(self, new_space):
+        """Atualiza o espaçamento entre os voxels na grid"""
+        # adjust grid spacing by 0.1 steps, clamped between 0.1 and 1.0
+        if new_space > 0:
+            self.grid_space = min(1.0, self.grid_space + 0.1)
+        else:
+            self.grid_space = max(0.1, self.grid_space - 0.1)
+            
         for x in range(self.size):
             for y in range(self.size):
                 for z in range(self.size):
-                    # define a random color for the voxel
-                    r = random.random()
-                    g = random.random()
-                    b = random.random()
-                    #a = random.random()
-                    a = 1.
-                    color = np.array([r,g,b,a])
-                    
-                    # define if voxel is visible or not
-                    #visible = random.choice([True, False])
-                    visible = True
-                    
-                    #cria o objeto Voxel na grid
-                    self.grid[x, y, z] = Voxel(np.array([x, y, z], dtype=float), scale=0.75, color=color, is_visible=visible)
-                    
+                    self.grid[x, y, z].scale = self.grid_space
+
+    @override
+    def draw(self, r=1., g=1., b=1.):
+        self.cube_vao = self.cubeInit(size=[1.,1.,1.]) # initialize cube geometry
+
         self.grid[
             self.selection_x,
             self.selection_y,
@@ -185,7 +193,7 @@ class Cube(Object):
         for x in range(self.size):
             for y in range(self.size):
                 for z in range(self.size):
-                    voxel = self.grid[x, y, z]
+                    voxel: Voxel = self.grid[x, y, z]
                     visible = voxel.is_visible
 
                     if visible:

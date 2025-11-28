@@ -45,7 +45,7 @@ Apenas um integrante do grupo deve enviar o projeto contendo:
     * Nomes completos dos integrantes;
     * Instruções de uso do programa.
 '''
-
+import random
 from cube import Cube
 from window import Window
 
@@ -58,6 +58,6 @@ win.target_cube = cube
 
 if __name__ == "__main__":
     win.openGLInit("Editor de Cenas Voxelizadas")
-    cube.draw() #inicializa a geometria
+    cube.draw()
     win.shaderInit()
     win.renderInit([cube])
