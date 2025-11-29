@@ -25,13 +25,13 @@ Este projeto implementa um Editor 3D de Cenas Voxelizadas, utilizando Python + O
 Tecnologia|Versão
 -----|----
 Python | 3.12
-glfw      |          2.10
-numpy      |         2.3
-pip         |        25.3
-pygame       |       2.6
 PyOpenGL      |      3.1
 PyOpenGL-accelerate| 3.1
+glfw      |          2.10
+numpy      |         2.3
+pygame       |       2.6
 tk                  |0.1
+pip         |        25.3
 
 Antes de rodar o programa, instale as dependências:
 ```
