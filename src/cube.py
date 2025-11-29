@@ -3,17 +3,9 @@ from dataclasses import dataclass
 from typing import override
 from object import Object
 from OpenGL.GL import (
-    glBindVertexArray,
-    glGetUniformLocation,
+    glBindVertexArray, glGetUniformLocation, glDrawArrays, glPolygonMode, glLineWidth,
     glUniformMatrix4fv,
-    glDrawArrays,
-    glPolygonMode,
-    glLineWidth,
-    GL_TRIANGLES,
-    GL_TRUE,
-    GL_FRONT_AND_BACK,
-    GL_LINE,
-    GL_FILL,
+    GL_TRIANGLES, GL_TRUE, GL_FRONT_AND_BACK, GL_LINE, GL_FILL,
 )
 import numpy as np
 from random import random
@@ -37,11 +29,11 @@ class Cube(Object):
         self.sound.load_sound('broke', 'broke_block.mp3')
         self.sound.load_sound('place', 'place_block.mp3')
 
-        # Grid and Voxel Management        
+        # Grid and Voxel Management
         self.size = grid_size # handle of the grid size
         self.grid = np.empty((self.size,self.size,self.size), dtype=Voxel) # grid to hold the voxels
+        self.selection_x, self.selection_y, self.selection_z = 0,0,self.size-1 # current selected voxel coordinates      
         self.grid_space = 1.
-        self.selection_x, self.selection_y, self.selection_z = 0,0,self.size-1 # current selected voxel coordinates
         
         # Grid initialization with random colors
         for x in range(self.size):
@@ -55,69 +47,51 @@ class Cube(Object):
                         is_visible=True
                     )
 
-
     # ------------------- Voxel Management Methods ------------------- #
     def get_selected_voxel(self):
-        """Retorna o objeto Voxel que está atualmente selecionado"""
         return self.grid[self.selection_x, self.selection_y, self.selection_z]
     
     def add_voxel(self): 
-        """Torna o voxel selecionado visível (adiciona) e define uma cor"""
         voxel: Voxel = self.get_selected_voxel()
 
-        # adiciona se ele não estiver visível
+        # Place only if not already visible
         if not voxel.is_visible:
             voxel.is_visible = True
-
-            # Cor aleatória para o cubo adicionado
+            
             r, g, b = random(), random(), random()
             voxel.color = np.array([r, g, b, 1.0])
+            
             self.sound.play_sound('place', volume=0.5)
 
     def remove_voxel(self):
-        """Torna o voxel selecionado invisível (remove)"""
         voxel: Voxel = self.get_selected_voxel()
 
         if voxel.is_visible:
             voxel.is_visible = False
+            
             self.sound.play_sound('broke', volume=0.5)
 
     def paint_selected_voxel(self, r, g, b):
-        """
-        Altera a cor do voxel atualmente selecionado para a cor especificada.
-        """
-        # Verifica se as coordenadas de seleção são válidas na grid
+        # Check if selection is within bounds
         if (0 <= self.selection_x < self.size and 
             0 <= self.selection_y < self.size and 
             0 <= self.selection_z < self.size):
             
             voxel: Voxel = self.grid[self.selection_x, self.selection_y, self.selection_z]
             
-            # Só pinta se o voxel existir e estiver visível
+            # Only paint if the voxel is visible
             if voxel and voxel.is_visible:
                 voxel.color = np.array([r, g, b, 1.0])
 
-    def clear_scene(self):
-        """
-        Torna todos os voxels atuais invisíveis.
-        Usado automaticamente antes de carregar um arquivo novo.
-        """
-        for x in range(self.size):
-            for y in range(self.size):
-                for z in range(self.size):
-                    # Se existe um voxel nessa posição, desliga a visibilidade dele
-                    if self.grid[x, y, z]: 
-                        self.grid[x, y, z].is_visible = False    
-
     def raycast_selection(self, cam_pos, cam_front, max_distance=20.0):
         """
-        Faz ray casting a partir da câmera e retorna o voxel mais próximo intersectado
-        Atualiza self.selection_x, y, z
+        Performs ray casting from the camera and returns the nearest intersected voxel.
+        Updates self.selection_x, self.selection_y, and self.selection_z.
         """
         best_t = float('inf')
         best_voxel = None
 
-        # Direção normalizada do raio (cam_front já está normalizado no seu código)
+        # Normalize camera front direction
         direction = cam_front / np.linalg.norm(cam_front)
 
         for x in range(self.size):
@@ -141,7 +115,7 @@ class Cube(Object):
 
                     for i in range(3):
                         if abs(direction[i]) < 1e-6:
-                            # Raio paralelo ao eixo
+                            # Ray is parallel to slab
                             if cam_pos[i] < min_bound[i] or cam_pos[i] > max_bound[i]:
                                 tmin = float('inf')
                                 break
@@ -155,25 +129,22 @@ class Cube(Object):
                         best_t = tmin
                         best_voxel = (x, y, z)
 
-        if best_voxel is not None:
-            # Desmarcar o anterior
+        if best_voxel is not None: # Unmark previous selection
             if hasattr(self, 'selection_x'):
                 old = self.grid[self.selection_x, self.selection_y, self.selection_z]
                 if old is not None:
                     old.is_selected = False
 
-            # Marcar o novo
+            # Mark new selection
             self.selection_x, self.selection_y, self.selection_z = best_voxel
             voxel = self.grid[best_voxel]
             voxel.is_selected = True
 
-            return voxel.pos  # retorna posição para debug se quiser
-
+            return voxel.pos # to debug if needed
         return None
 
     def updateGridSpace(self, new_space):
-        """Atualiza o espaçamento entre os voxels na grid"""
-        # adjust grid spacing by 0.1 steps, clamped between 0.1 and 1.0
+        """Update the spacing of the voxel grid."""
         if new_space > 0:
             self.grid_space = min(1.0, self.grid_space + 0.1)
         else:
@@ -205,7 +176,6 @@ class Cube(Object):
                     visible = voxel.is_visible
 
                     if visible:
-                        # --- desenha normalmente ---
                         Tx, Ty, Tz = voxel.pos
                         S = voxel.scale
 
@@ -217,26 +187,24 @@ class Cube(Object):
                             b = min(b + 0.5, 1.0)
 
                         self.defineColor(shader_program, r, g, b, a)
+                        
                         transform = self.transformation(Tx, Ty, Tz, Sx=S, Sy=S, Sz=S)
                         transform_loc = glGetUniformLocation(shader_program, "transform")
                         glUniformMatrix4fv(transform_loc, 1, GL_TRUE, transform)
 
                         glDrawArrays(GL_TRIANGLES, 0, cube_count)
 
-                    else:
-                        # --- DESENHAR WIREFRAME SE ESTIVER SELECIONADO ---
+                    else: # --- Draw wireframe when the voxel is selected and not visible ---
                         if voxel.is_selected:
                             Tx, Ty, Tz = voxel.pos
                             S = voxel.scale
 
-                            # cor branca do wireframe
                             self.defineColor(shader_program, 1.0, 1.0, 1.0, 1.0)
 
                             transform = self.transformation(Tx, Ty, Tz, Sx=S, Sy=S, Sz=S)
                             transform_loc = glGetUniformLocation(shader_program, "transform")
                             glUniformMatrix4fv(transform_loc, 1, GL_TRUE, transform)
 
-                            # desenhar como wireframe
                             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
                             glLineWidth(2.5)
                             glDrawArrays(GL_TRIANGLES, 0, cube_count)

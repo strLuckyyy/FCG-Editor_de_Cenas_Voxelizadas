@@ -1,11 +1,12 @@
 import os
 import pygame
+from typing import Any, cast
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 SOUNDS_PATH = os.path.join(PROJECT_ROOT, "sounds")
 
-class SoundManager:
+class SoundManager:#   audio quality, bits, stereo, buffer size
     def __init__(self, freq=44100, size=-16, channels=2, buffer=512):
         pygame.mixer.init(frequency=freq, size=size, channels=channels, buffer=buffer)
         self.default_volume = 0.5
@@ -15,8 +16,10 @@ class SoundManager:
     def _full_path(self, file_path: str) -> str:
         return os.path.join(SOUNDS_PATH, file_path)
 
+    # ------------------- Sound Effect Management ------------------- #
+
     def load_sound(self, name: str, file_path: str):
-        """Carrega um som apenas uma vez (cache automático)."""
+        """Loads a sound effect and stores it by name."""
         if name in self.sounds:
             return self.sounds[name]
 
@@ -25,9 +28,8 @@ class SoundManager:
         if not os.path.exists(path):
             print(f"[SoundManager] ERRO: Arquivo não encontrado: {path}")
             return None
-
         try:
-            sound = pygame.mixer.Sound(path)
+            sound = pygame.mixer.Sound(cast(Any, path))
             self.sounds[name] = sound
             return sound
         except pygame.error as e:
@@ -36,7 +38,6 @@ class SoundManager:
 
 
     def play_sound(self, name: str, volume=None):
-        """Toca efeito sonoro (volume opcional)."""
         sound = self.sounds.get(name)
         if sound is None:
             print(f"[SoundManager] Som '{name}' não carregado!")
@@ -46,8 +47,9 @@ class SoundManager:
         sound.set_volume(volume)
         sound.play()
 
+    # ------------------- Music Management ------------------- #
+
     def play_music(self, file_path: str, volume=1.0, loop=True):
-        """Toca música de fundo."""
         path = self._full_path(file_path)
 
         if not os.path.exists(path):

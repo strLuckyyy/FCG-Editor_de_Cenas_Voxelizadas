@@ -2,7 +2,7 @@ from OpenGL.GL import (
     glGenVertexArrays, glBindVertexArray,
     glGenBuffers, glBindBuffer, glBufferData,
     glEnableVertexAttribArray, glVertexAttribPointer,
-    glGetUniformLocation, glUniform4f, glUniformMatrix4fv,
+    glGetUniformLocation, glUniform4f,
     GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_FLOAT, GL_FALSE
 )
 import numpy as np
@@ -85,6 +85,8 @@ class Object:
         Returns the VAO ID
         '''
         sx, sy, sz = float(size[0]) / 2.0, float(size[1]) / 2.0, float(size[2]) / 2.0
+        
+        # Check cache
         key = ("cube", round(sx,6), round(sy,6), round(sz,6),
                tuple(tuple(map(float, c)) for c in (face_colors or ())))
         cached = Object._mesh_cache.get(key)
@@ -199,7 +201,7 @@ class Object:
     
     def draw(self):
         '''
-        ## Must be implemented in child classes
+        ## Must be implemented in child classes -> @override
         
         -- Initialize geometry here ---
         
@@ -211,7 +213,7 @@ class Object:
     
     def render(self, shader_program):
         '''
-        ## Must be implemented in child classes
+        ## Must be implemented in child classes -> @override
         
         ----- bind vao -----\n
         glBindVertexArray(vao)

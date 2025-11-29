@@ -5,7 +5,7 @@ import numpy as np
 import os
 
 class SceneManager:
-    def __init__(self, filename="grid_salva.txt"):
+    def __init__(self, filename="save1.txt"):
         self.filename = filename
         self.root = Tk()
         self.root.withdraw()
@@ -37,15 +37,19 @@ class SceneManager:
     
     def save_scene(self, cube_object: Cube):
         """
-        Lê a grid do cubo e salva no arquivo de texto.
+        Read the cube_object grid and save the scene to a text file.
+        
+        Format:
+        
+        SIZE <grid_size>
+        SPACE <grid_space>
+        x y z r g b
         """
         filename = self.ask_save_file()
 
         if not filename:
-            print("Salvamento cancelado.")
             return
-
-        print(f"Salvando cena em {filename}...")
+        
         self.filename = filename
 
         try:
@@ -60,7 +64,7 @@ class SceneManager:
 
                     if voxel and voxel.is_visible:
                         r, g, b, a = voxel.color
-                        f.write(f"{x} {y} {z} {r} {g} {b}\n")
+                        f.write(f"{x} {y} {z} {r} {g} {b} {a}\n")
 
             print("Cena salva com sucesso!")
         except Exception as e:
@@ -75,19 +79,18 @@ class SceneManager:
         with open(filename, "r") as f:
             lines = f.readlines()
 
-        # --- Ler metadados ---
         size_line = lines[0].split()
         space_line = lines[1].split()
 
         new_size = int(size_line[1])
         new_space = float(space_line[1])
 
-        # --- recriar a grid inteira com o novo tamanho ---
+        # Reinitialize cube grid
         cube_object.size = new_size
         cube_object.grid_space = new_space
         cube_object.grid = np.empty((new_size, new_size, new_size), dtype=Voxel)
 
-        # inicializar voxels vazios
+        # Initialize all voxels as invisible
         for x in range(new_size):
             for y in range(new_size):
                 for z in range(new_size):
@@ -98,8 +101,8 @@ class SceneManager:
                         is_visible=False
                     )
 
-        # --- ler voxels visíveis ---
-        for line in lines[2:]:  # pular metadata
+        # Load voxel data
+        for line in lines[2:]:  # skip SIZE and SPACE lines
             if not line.strip():
                 continue
             x, y, z, r, g, b = line.split()

@@ -32,7 +32,6 @@ class Window:
         
         # Mouse
         self.first_mouse = True
-        self.scroll_value = 0.0
         
         # Crosshair
         self.crosshair_vao = None
@@ -61,69 +60,47 @@ class Window:
         self.cam_pitch += yoffset
     
     def mouseButtonCallback(self, window, button, action, mods):
-        '''
-        Inputs dos Botões do Mouse
-        '''
         if action == glfw.PRESS:
-            
-            # Botão Esquerdo = Adicionar (Inserir)
+            # Left Mouse Button = Place Block
             if button == glfw.MOUSE_BUTTON_LEFT:
                 if self.target_cube and hasattr(self.target_cube, 'add_voxel'):
                     self.target_cube.add_voxel()
             
-            # Botão Direito = Remover (Deletar)
+            # Right Mouse Button = Delete Block
             elif button == glfw.MOUSE_BUTTON_RIGHT:
                 if self.target_cube and hasattr(self.target_cube, 'remove_voxel'):
                     self.target_cube.remove_voxel()
-        
+     
     def scrollCallback(self, window, xoffset, yoffset):
-        self.scroll_value += yoffset
+        if yoffset != 0 and self.target_cube is not None:
+            self.target_cube.updateGridSpace(yoffset)
     
-    def keyCallback(self, window, key, scancode, action, mods):  
-        '''
-        Inputs do teclado
-        '''
-
-        if action == glfw.PRESS: # verificando se a tecla foi pressionada
-            # --- INSERÇÃO ---
-            if key == glfw.KEY_SPACE:
-                # Chamando uma função a ser criada no cubo
-                if self.target_cube is not None and hasattr(self.target_cube, 'add_voxel'):
-                    self.target_cube.add_voxel()
-
-            # --- DELEÇÃO ---
-            elif key == glfw.KEY_DELETE or key == glfw.KEY_BACKSPACE:
-                if self.target_cube is not None and hasattr(self.target_cube, 'remove_voxel'):  # se o atributo existe em cube.py
-                    self.target_cube.remove_voxel()
-
-            
-            # --- PINTURA (Teclas 1-5) ---
-            elif key == glfw.KEY_1: # Vermelho
+    def keyCallback(self, window, key, scancode, action, mods):
+        if action == glfw.PRESS:
+            # --- Painting (Num Key 1-5) ---
+            if key == glfw.KEY_1: # Red
                 if self.target_cube: self.target_cube.paint_selected_voxel(1.0, 0.0, 0.0)
 
-            elif key == glfw.KEY_2: # Verde
+            elif key == glfw.KEY_2: # Green
                 if self.target_cube: self.target_cube.paint_selected_voxel(0.0, 1.0, 0.0)
 
-            elif key == glfw.KEY_3: # Azul
+            elif key == glfw.KEY_3: # Blue
                 if self.target_cube: self.target_cube.paint_selected_voxel(0.0, 0.0, 1.0)
             
-            elif key == glfw.KEY_4: # Amarelo
+            elif key == glfw.KEY_4: # Yellow
                 if self.target_cube: self.target_cube.paint_selected_voxel(1.0, 1.0, 0.0)
 
-            elif key == glfw.KEY_5: # Branco
+            elif key == glfw.KEY_5: # White
                 if self.target_cube: self.target_cube.paint_selected_voxel(1.0, 1.0, 1.0)
 
-
-            # --- SALVAR (K) ---
+            # --- SAVE (K) ---
             elif key == glfw.KEY_K:
                 if self.target_cube:
-                    # A janela manda o scene_manager ler o cubo e salvar
                     self.scene_manager.save_scene(self.target_cube)
 
-            # --- CARREGAR (L) ---
+            # --- LOAD (L) ---
             elif key == glfw.KEY_L:
                 if self.target_cube:
-                    # A janela manda o scene_manager limpar e preencher o cubo
                     self.scene_manager.load_scene(self.target_cube)
     
     def camMovement(self):
@@ -161,7 +138,7 @@ class Window:
     # --------------------------------------------
     
     # OpenGL Initialization Methods -----------------------------
-    def openGLInit(self, name="Casa 3D"): 
+    def openGLInit(self, name="Project"): 
         '''
         Initialize GLFW and create a window
         Here you will find the window creation and context initialization
@@ -192,10 +169,7 @@ class Window:
         '''
         vertex_shader = """
             #version 400
-            layout(location = 0) in vec3 vertex_posicao;        
-            //view - matriz da câmera recebida do PYTHON
-            //proj - matriz de projeção recebida do PYTHON
-            //transform - matriz de transformação geométrica do objeto recebida do PYTHON
+            layout(location = 0) in vec3 vertex_posicao;
             uniform mat4 transform, view, proj;
             void main () {
                 gl_Position = proj*view*transform*vec4 (vertex_posicao, 1.0);
@@ -303,30 +277,27 @@ class Window:
         Initialize the geometry for a crosshair in NDC space.
         Returns the VAO ID.
         '''
-        size = 0.02 # Tamanho da linha em NDC
-        thickness = 0.005 # Meia espessura (largura da linha)
+        cross_size = 0.03
+        thickness = 0.005 
         
         vertices = np.array([
-            # Linha Horizontal (um retângulo)
-            -size, -thickness, 0.0,
-             size, -thickness, 0.0,
-             size,  thickness, 0.0,
+            -cross_size, -thickness, 0.0,
+             cross_size, -thickness, 0.0,
+             cross_size,  thickness, 0.0,
             
-            -size, -thickness, 0.0,
-            -size,  thickness, 0.0,
-             size,  thickness, 0.0,
+            -cross_size, -thickness, 0.0,
+            -cross_size,  thickness, 0.0,
+             cross_size,  thickness, 0.0,
              
-            # Linha Vertical (um retângulo)
-            -thickness, -size, 0.0,
-             thickness, -size, 0.0,
-             thickness,  size, 0.0,
+            -thickness, -cross_size, 0.0,
+             thickness, -cross_size, 0.0,
+             thickness,  cross_size, 0.0,
             
-            -thickness, -size, 0.0,
-            -thickness,  size, 0.0,
-             thickness,  size, 0.0
+            -thickness, -cross_size, 0.0,
+            -thickness,  cross_size, 0.0,
+             thickness,  cross_size, 0.0
         ], dtype=np.float32)
         
-        # Cria e configura o VAO/VBO
         vao = glGenVertexArrays(1)
         glBindVertexArray(vao)
 
@@ -334,14 +305,13 @@ class Window:
         glBindBuffer(GL_ARRAY_BUFFER, vbo)
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
         
-        # O layout location 0 é o mesmo usado pelos cubos
         glEnableVertexAttribArray(0)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, None)
         
         glBindVertexArray(0)
         
         self.crosshair_vao = vao
-        self.crosshair_vertex_count = len(vertices) // 3 # 12 vértices
+        self.crosshair_vertex_count = len(vertices) // 3
         return vao
      
     def crosshairShaderInit(self):
@@ -352,8 +322,6 @@ class Window:
             #version 400
             layout(location = 0) in vec3 vertex_posicao;
             void main () {
-                // A posição já está em NDC (Normalized Device Coordinates),
-                // então passamos diretamente para gl_Position.
                 gl_Position = vec4(vertex_posicao, 1.0);
             }
         """
@@ -372,7 +340,6 @@ class Window:
             
         self.crosshair_shader_program = compileProgram(vs, fs)
         
-        # Verifica erros e deleta shaders (mesma lógica de shaderInit)
         glDeleteShader(vs)
         glDeleteShader(fs)
         
@@ -384,12 +351,10 @@ class Window:
         '''
         glUseProgram(self.crosshair_shader_program)
         
-        # Define a cor da mira (exemplo: vermelho)
         color = np.array([1.0, 0.0, 0.0, 1.0], dtype=np.float32)
         colorLoc = glGetUniformLocation(self.crosshair_shader_program, "crosshairColor")
         glUniform4fv(colorLoc, 1, color)
         
-        # Desenha
         glBindVertexArray(self.crosshair_vao)
         glDrawArrays(GL_TRIANGLES, 0, self.crosshair_vertex_count)
         glBindVertexArray(0)
@@ -418,11 +383,6 @@ class Window:
             glUseProgram(self.shader_program)
             
             self.camInit()
-            
-            if self.scroll_value != 0.0:
-                if self.target_cube is not None:
-                    self.target_cube.updateGridSpace(self.scroll_value)
-                self.scroll_value = 0.0
             
             if self.target_cube is not None:
                 self.target_cube.raycast_selection(
