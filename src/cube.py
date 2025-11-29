@@ -8,6 +8,7 @@ from OpenGL.GL import (
     GL_TRIANGLES, GL_TRUE, GL_FRONT_AND_BACK, GL_LINE, GL_FILL,
 )
 import numpy as np
+from numpy.typing import NDArray
 from random import random
 from sound_manager import SoundManager
 
@@ -31,7 +32,7 @@ class Cube(Object):
 
         # Grid and Voxel Management
         self.size = grid_size # handle of the grid size
-        self.grid = np.empty((self.size,self.size,self.size), dtype=Voxel) # grid to hold the voxels
+        self.grid = np.empty((self.size, self.size, self.size), dtype=Voxel) # grid to hold the voxels
         self.selection_x, self.selection_y, self.selection_z = 0,0,self.size-1 # current selected voxel coordinates      
         self.grid_space = 1.
         
@@ -39,11 +40,11 @@ class Cube(Object):
         for x in range(self.size):
             for y in range(self.size):
                 for z in range(self.size):
-                    r, g, b = random(), random(), random()
+                    r, g, b, a = random(), random(), random(), random()
                     self.grid[x, y, z] = Voxel(
                         pos=np.array([x, y, z], dtype=float),
                         scale=self.grid_space,
-                        color=np.array([r, g, b, 1.0]),
+                        color=np.array([r, g, b, a]),
                         is_visible=True
                     )
 
@@ -58,8 +59,8 @@ class Cube(Object):
         if not voxel.is_visible:
             voxel.is_visible = True
             
-            r, g, b = random(), random(), random()
-            voxel.color = np.array([r, g, b, 1.0])
+            r, g, b, a = random(), random(), random(), random()
+            voxel.color = np.array([r, g, b, a])
             
             self.sound.play_sound('place', volume=0.5)
 
@@ -101,7 +102,7 @@ class Cube(Object):
                     '''if not voxel.is_visible and not hasattr(voxel, 'is_visible'):
                         continue  # pula se ainda não foi criado'''
 
-                    # Centro do voxel no mundo (considerando escala 0.75 e offset)
+                    # Center of the voxel in world space (considering scale 0.75 and offset)
                     center = np.array([x, y, z], dtype=float)
                     half_size = voxel.scale / 2.0  # 0.375
 

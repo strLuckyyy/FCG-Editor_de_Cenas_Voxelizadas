@@ -36,7 +36,6 @@ class SoundManager:#   audio quality, bits, stereo, buffer size
             print(f"[SoundManager] Falha ao carregar '{file_path}': {e}")
             return None
 
-
     def play_sound(self, name: str, volume=None):
         sound = self.sounds.get(name)
         if sound is None:

@@ -9,9 +9,9 @@
 from cube import Cube
 from window import Window
 
-# variables and objects
+
 win = Window()
-cube = Cube()
+cube = Cube(10)
 
 win.target_cube = cube
 

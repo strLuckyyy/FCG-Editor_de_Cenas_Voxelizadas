@@ -38,6 +38,10 @@ class Window:
         self.crosshair_shader_program = None
         self.crosshair_vertex_count = 0
     
+    def mouseCapture(self):
+        glfw.focus_window(self.window)
+        glfw.set_input_mode(self.window, glfw.CURSOR, glfw.CURSOR_DISABLED)
+    
     # Callback -----------------------------------
     def redimensionCallback(self, window, w, h):
         self.WIDTH = w
@@ -97,11 +101,13 @@ class Window:
             elif key == glfw.KEY_K:
                 if self.target_cube:
                     self.scene_manager.save_scene(self.target_cube)
+                    self.mouseCapture()
 
             # --- LOAD (L) ---
             elif key == glfw.KEY_L:
                 if self.target_cube:
                     self.scene_manager.load_scene(self.target_cube)
+                    self.mouseCapture()
     
     def camMovement(self):
         '''
@@ -149,7 +155,9 @@ class Window:
         if not self.window:
             glfw.terminate()
             exit()
-            
+        
+        self.mouseCapture()
+        
         glfw.set_window_size_callback(self.window, self.redimensionCallback)
         glfw.make_context_current(self.window)
         
@@ -375,7 +383,7 @@ class Window:
             self.delta_time = current_time - before_time
             before_time = current_time
             
-            glClearColor(0.5, 0.7, 1.0, 1.0)
+            glClearColor(0.1, 0.1, 0.1, 1.0)
             glClear(GL_COLOR_BUFFER_BIT)
             glClear(GL_DEPTH_BUFFER_BIT)
             

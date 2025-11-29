@@ -89,6 +89,7 @@ class SceneManager:
         cube_object.size = new_size
         cube_object.grid_space = new_space
         cube_object.grid = np.empty((new_size, new_size, new_size), dtype=Voxel)
+        cube_object.selection_x, cube_object.selection_y, cube_object.selection_z = 0, 0, new_size - 1
 
         # Initialize all voxels as invisible
         for x in range(new_size):
@@ -103,14 +104,28 @@ class SceneManager:
 
         # Load voxel data
         for line in lines[2:]:  # skip SIZE and SPACE lines
+            #
+            # Aqui que tava o erro da apresentação kkkk
+            # Ele tava tentando pegar o valor do "a" (transparencia) sendo q não existia em alguns saves mais antigos
+            # E também, quando ele pegava o "a", ele tava pegando como string e não float
+            #
+            a = 1.0
+            line_split = line.split()
+            print(len(line_split))
+            
             if not line.strip():
                 continue
-            x, y, z, r, g, b = line.split()
+            
+            if len(line_split) == 6:
+                x, y, z, r, g, b = line_split
+            else: 
+                x, y, z, r, g, b, a = line_split
+            
             x = int(x); y = int(y); z = int(z)
-            r = float(r); g = float(g); b = float(b)
+            r = float(r); g = float(g); b = float(b); a = float(a)
 
             voxel = cube_object.grid[x, y, z]
             voxel.is_visible = True
-            voxel.color = np.array([r, g, b, 1.0])
+            voxel.color = np.array([r, g, b, a], dtype=float)
 
         print("Cena carregada com sucesso!")
