@@ -1,6 +1,5 @@
 
 import glfw
-
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileShader, compileProgram
 
@@ -28,7 +27,6 @@ class Window:
         self.cam_front = np.array([0., 0., -1.])
         self.cam_speed, self.cam_yaw_speed = 10., 30.
         self.cam_pos = np.array([0., 0., 2.])
-        
         self.cam_yaw, self.cam_pitch = -90., 0.
         self.last_x, self.last_y = self.WIDTH / 2, self.HEIGHT / 2
         

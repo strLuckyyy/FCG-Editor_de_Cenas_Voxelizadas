@@ -31,7 +31,6 @@ class Voxel:
 class Cube(Object):
     def __init__(self, grid_size=3):
         super().__init__()
-        self.cube_vao = None
         
         # Sound manager for voxel actions
         self.sound: SoundManager = SoundManager()
@@ -43,7 +42,7 @@ class Cube(Object):
         self.grid = np.empty((self.size,self.size,self.size), dtype=Voxel) # grid to hold the voxels
         self.grid_space = 1.
         self.selection_x, self.selection_y, self.selection_z = 0,0,self.size-1 # current selected voxel coordinates
-
+        
         # Grid initialization with random colors
         for x in range(self.size):
             for y in range(self.size):
@@ -186,9 +185,8 @@ class Cube(Object):
                     self.grid[x, y, z].scale = self.grid_space
 
     @override
-    def draw(self, r=1., g=1., b=1.):
-        self.cube_vao = self.cubeInit(size=[1.,1.,1.]) # initialize cube geometry
-
+    def draw(self):
+        self.cube_vao = self.cubeInit(size=[1.,1.,1.]) 
         self.grid[
             self.selection_x,
             self.selection_y,

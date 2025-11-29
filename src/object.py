@@ -1,9 +1,30 @@
-from OpenGL.GL import *
+from OpenGL.GL import (
+    glGenVertexArrays, glBindVertexArray,
+    glGenBuffers, glBindBuffer, glBufferData,
+    glEnableVertexAttribArray, glVertexAttribPointer,
+    glGetUniformLocation, glUniform4f, glUniformMatrix4fv,
+    GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_FLOAT, GL_FALSE
+)
 import numpy as np
+from typing import Optional
 
 class Object:
+    _mesh_cache = {}
+    _uniform_cache = {}
+    
     def __init__(self):
         self.vertex_count = {}
+    
+    # ------------------- Uniform Location Cache ------------------- #
+    
+    def _get_uniform_location(self, shader_program, name: str):
+        """Cacheia glGetUniformLocation por (program, name)."""
+        key = (int(shader_program), name)
+        loc = Object._uniform_cache.get(key)
+        if loc is None:
+            loc = glGetUniformLocation(shader_program, name)
+            Object._uniform_cache[key] = loc
+        return loc
     
     # ------------------- Color Helpers ------------------- #
     
@@ -11,9 +32,8 @@ class Object:
         '''
         Define the object color in shader using float values (0.0 - 1.0)
         '''
-        color = np.array([float(r), float(g), float(b), float(a)], dtype=np.float32)
-        colorLoc = glGetUniformLocation(shader_program, "objColor")
-        glUniform4fv(colorLoc, 1, color)
+        glUniform4f(self._get_uniform_location(shader_program, "objColor"), 
+                    float(r), float(g), float(b), float(a))
         return shader_program
     
     def rgbToFloat(self, r, g, b):
@@ -22,39 +42,38 @@ class Object:
 
     def objColor(self, tri_amount, r, g, b):
         ''' Generate color array for given number of triangles '''
-        colors = [float(r), float(g), float(b)] * 3    
-        return np.array(colors * tri_amount, dtype=np.float32) 
+        color_vec = np.array([float(r), float(g), float(b)], dtype=np.float32)
+        verts = tri_amount * 3
+        return np.tile(color_vec, verts).astype(np.float32)
     
     # ------------------- Mesh Initializer ------------------- #
-    
-    def __meshInit(self, vertices, colors=None):
+    def __meshInit(self, vertices: np.ndarray, colors: Optional[np.ndarray] = None):
         ''' 
         ## PRIVATE\n 
         Initialize a mesh with given vertices and colors
         
         Returns the VAO ID
         '''
-        
+        assert isinstance(vertices, np.ndarray) and vertices.dtype == np.float32
         vao = glGenVertexArrays(1)
         glBindVertexArray(vao)
 
-        points = np.array(vertices, dtype=np.float32)
         pvbo = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, pvbo)
-        glBufferData(GL_ARRAY_BUFFER, points, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
         glEnableVertexAttribArray(0)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, None)
         
         if colors is not None:
-            color = np.array(colors, dtype=np.float32)
+            assert isinstance(colors, np.ndarray) and colors.dtype == np.float32
             cvbo = glGenBuffers(1)
             glBindBuffer(GL_ARRAY_BUFFER, cvbo)
-            glBufferData(GL_ARRAY_BUFFER, color, GL_STATIC_DRAW)
+            glBufferData(GL_ARRAY_BUFFER, colors.nbytes, colors, GL_STATIC_DRAW)
             glEnableVertexAttribArray(1)
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, None)
         
         glBindVertexArray(0)
-        self.vertex_count[vao] = len(vertices) // 3
+        self.vertex_count[vao] = int(len(vertices) // 3)
         return vao
         
     # ------------------- Builders 3D ------------------- #     
@@ -65,9 +84,14 @@ class Object:
         
         Returns the VAO ID
         '''
-        sx, sy, sz = size[0]/2, size[1]/2, size[2]/2
+        sx, sy, sz = float(size[0]) / 2.0, float(size[1]) / 2.0, float(size[2]) / 2.0
+        key = ("cube", round(sx,6), round(sy,6), round(sz,6),
+               tuple(tuple(map(float, c)) for c in (face_colors or ())))
+        cached = Object._mesh_cache.get(key)
+        if cached:
+            return cached
 
-        vertices = [
+        vertices = np.array([
             # Front
             -sx,-sy, sz,   sx,-sy, sz,   sx, sy, sz,
             -sx,-sy, sz,   sx, sy, sz,  -sx, sy, sz,
@@ -86,16 +110,22 @@ class Object:
             # Base
             -sx,-sy,-sz,   sx,-sy,-sz,   sx,-sy, sz,
             -sx,-sy,-sz,   sx,-sy, sz,  -sx,-sy, sz
-        ]
+        ], dtype=np.float32)
 
-        # Colors per face
+        colors_array = None
         if face_colors is not None:
-            colors = []
-            for color in face_colors:
-                colors.extend(color * 6)
+            fc = list(face_colors)
+            if len(fc) != 6:
+                raise ValueError("face_colors deve conter 6 cores (uma por face).")
+            
+            colors_list = []
+            for color in fc:
+                col = np.array(color, dtype=np.float32)
+                colors_list.append(np.tile(col, 6)) 
+            colors_array = np.concatenate(colors_list).astype(np.float32)
 
-            vao = self.__meshInit(vertices, colors)
-        vao = self.__meshInit(vertices)
+        vao = self.__meshInit(vertices, colors_array)
+        Object._mesh_cache[key] = vao
         return vao
     
     # ------------------- Transformations ------------------- #
@@ -163,7 +193,7 @@ class Object:
         rotation = rotation_z @ rotation_y @ rotation_x
         transform = translation @ rotation @ scale
 
-        return transform
+        return transform.astype(np.float32)
     
     # ------------------- Abstract Methods ------------------- #
     

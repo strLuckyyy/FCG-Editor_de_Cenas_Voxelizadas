@@ -50,7 +50,7 @@ from window import Window
 
 # variables and objects
 win = Window()
-cube = Cube(grid_size=5)
+cube = Cube()
 
 # definindo o objeto cubo como alvo para acessar seus atributos na window
 win.target_cube = cube
